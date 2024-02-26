@@ -38,7 +38,10 @@ class EstimatorNotFoundError(RuntimeError):
 # using pandas
 # cutoff should be chosen manually
 
-def etot(fname=None,cutoff=0,estimator="trial"):
+# --- ver 3.0.1 ---
+# add end
+
+def etot(fname=None,start=0,end=None,estimator="trial"):
   if fname is None:
     for fname in ["fciqmc_stats","FCIMCStats","FCIMCStats2"]:
       try:   
@@ -52,12 +55,16 @@ def etot(fname=None,cutoff=0,estimator="trial"):
     except FileNotFoundError as e:
       print("please check the input file")
 
-  block_data = pd.DataFrame(columns=['start','energy','err','converged'])
+  block_data = pd.DataFrame(columns=['start','end','energy','err','converged'])
   for s,d in zip(step,data):
-    if cutoff > s[0]:
-      d = d[s>cutoff]
-      s = s[s>cutoff]
-    start = max(s[0],cutoff)
+    if start > s[0]:
+      d = d[s>start]
+      s = s[s>start]
+    _start = max(s[0],start)
+    if end and end <= s[-1]:
+      d = d[s<=end]
+      s = s[s<=end]
+    _end = min(s[-1],end) if end else s[-1]
 
     _,r,_ = pyblock.pd_utils.reblock(pd.Series(d))
     b = pyblock.pd_utils.reblock_summary(r)
@@ -69,11 +76,13 @@ def etot(fname=None,cutoff=0,estimator="trial"):
       e = r.data['mean'].loc[0]
       err = r.data['standard error'].loc[0]
       conv = False
-    block_data.loc[len(block_data)] = [start, e, err, conv]
+    block_data.loc[len(block_data)] = [_start, _end, e, err, conv]
 
   print('================')
   print('{:<12}'.format('start:')
         +' '.join('{:<20d}'.format(int(s)) for s in block_data['start'] ))
+  print('{:<12}'.format('end:')
+        +' '.join('{:<20d}'.format(int(s)) for s in block_data['end'] ))
   print('{:<12}'.format('energy:')
         +' '.join('{:<20}'.format(e) for e in block_data['energy']))
   print('{:<12}'.format('std_err:')
@@ -182,10 +191,10 @@ def get_data(fname, estimator='trial'):
     elif fname.split('/')[-1] in ["fciqmc_stats"]:
       return _get_mneci_data(fname, estimator=estimator)
   except ZeroDenomError as e:
-    print("All Trial Denom is 0. Please try dray(estimator='projE')")
+    print("All Trial Denom is 0. Please try etot(estimator='projE')")
     exit()
   except EstimatorNotFoundError as e:
-    print("No TrialE Denom found. Please check the FCIMCStats or fciqmc_stats file and pyblock manually")
+    print("No TrialE Denom found. Please try etot(estimator='projE'), or check the FCIMCStats or fciqmc_stats file and pyblock manually")
     exit()
 
    
