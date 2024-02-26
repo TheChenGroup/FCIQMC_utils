@@ -17,5 +17,5 @@ pyblock
 \# draw numerator and denominator for trial and projection (HF) estimator <br>
     
 ## get_etot.py
-\>\>\> get_etot.etot(fname, cutoff) <br>
+\>\>\> get_etot.etot(fname, start, end) <br>
 \# perform block analysis and print energy/std err for NECI, MNECI or DNECI <br>
